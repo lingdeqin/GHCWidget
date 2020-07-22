@@ -94,6 +94,7 @@ public class GitHubAPITask extends AsyncTask<String, Integer, String> // Usernam
                                     Date date = textFormat.parse(xpp.getAttributeValue(null, "data-date"));
                                     int commits = Integer.valueOf(xpp.getAttributeValue(null, "data-count"));
                                     String color = xpp.getAttributeValue(null, "fill");
+                                    Log.i("fff", "color: "+color);
                                     Day day = new Day(date, commits, color);
                                     base.addDay(day);
                                     eventType = xpp.next();

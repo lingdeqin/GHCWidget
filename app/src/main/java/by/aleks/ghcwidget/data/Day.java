@@ -51,6 +51,18 @@ public class Day {
         if(color.equals("#03001c"))
             return 4;
 
+        if(color.equals("#ebedf0"))
+            return 0;
+        if(color.equals("#9be9a8"))
+            return 1;
+        if(color.equals("#40c463"))
+            return 2;
+        if(color.equals("#30a14e"))
+            return 3;
+        if(color.equals("#216e39"))
+            return 4;
+
+
         throw new IllegalArgumentException("Can't find the color!");
     }
 

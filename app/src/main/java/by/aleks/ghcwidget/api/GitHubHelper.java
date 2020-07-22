@@ -4,6 +4,13 @@ import android.content.Context;
 import android.util.Log;
 import android.webkit.CookieManager;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -15,8 +22,15 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 
 import by.aleks.ghcwidget.R;
 
@@ -48,72 +62,31 @@ public class GitHubHelper {
     protected static synchronized String downloadFromServer(String username, Context context)
             throws ApiException {
         String retval = null;
-        String url = "https://github.com/users/" + username + "/contributions";
+        String urlstr = "https://github.com/users/" + username + "/contributions";
+        Log.d(logTag, "Fetching " + urlstr);
+        try{
+            URL url = new URL(urlstr);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+            int responseCode = connection.getResponseCode();
+            if(responseCode == HttpURLConnection.HTTP_OK){
+                InputStream inputStream = connection.getInputStream();
+                StringBuilder sb = new StringBuilder();
+                String line;
 
-        Log.d(logTag, "Fetching " + url);
-
-        // create an http client and a request object.
-        DefaultHttpClient client = new DefaultHttpClient();
-        HttpGet request = new HttpGet(url);
-
-        // load and attach cookies
-        String cookies = CookieManager.getInstance().getCookie(context.getString(R.string.login_url));
-        if(cookies != null){
-            BasicCookieStore lCS = getCookieStore(cookies, context.getString(R.string.domain));
-
-            HttpContext localContext = new BasicHttpContext();
-            client.setCookieStore(lCS);
-            localContext.setAttribute(ClientContext.COOKIE_STORE, lCS);
-
-        }
-
-
-        try {
-
-            // execute the request
-            HttpResponse response = client.execute(request);
-            StatusLine status = response.getStatusLine();
-            if (status.getStatusCode() != HTTP_STATUS_OK) {
-                // handle error here
-                return "invalid_response";
+                BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+                retval = sb.toString();
+            }else{
+                retval = "invalid_response";
             }
-
-            // process the content.
-            HttpEntity entity = response.getEntity();
-            InputStream ist = entity.getContent();
-            ByteArrayOutputStream content = new ByteArrayOutputStream();
-
-            int readCount = 0;
-            while ((readCount = ist.read(buff)) != -1) {
-                content.write(buff, 0, readCount);
-            }
-            retval = new String(content.toByteArray());
-
-        } catch (Exception e) {
-            throw new ApiException("Problem connecting to the server " +
-                    e.getMessage(), e);
+        }catch (IOException e){
+            retval = "invalid_response";
         }
-
         return retval;
     }
 
-    // parse cookie string
-    private static BasicCookieStore getCookieStore(String cookies, String domain) {
-        String[] cookieValues = cookies.split(";");
-        BasicCookieStore cs = new BasicCookieStore();
-
-        BasicClientCookie cookie;
-        for (int i = 0; i < cookieValues.length; i++) {
-            String[] split = cookieValues[i].split("=");
-            if (split.length == 2)
-                cookie = new BasicClientCookie(split[0], split[1]);
-            else
-                cookie = new BasicClientCookie(split[0], null);
-
-            cookie.setDomain(domain);
-            cs.addCookie(cookie);
-        }
-        return cs;
-
-    }
 }
